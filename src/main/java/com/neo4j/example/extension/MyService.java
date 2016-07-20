@@ -44,6 +44,18 @@ public class MyService {
     }
 
     @GET
+    @Path("/actedCypher/{name}")
+    public Response getMoviesCypher(@PathParam("name") String name, @Context GraphDatabaseService db) throws IOException {
+        Result result = db.execute("MATCH (p:Person)-[:ACTED_IN]-(movie) WHERE p.name = {n} RETURN movie.title",
+                Collections.<String, Object>singletonMap("n", name));
+        List<String> movieTitles = new ArrayList<>();
+        for (Map<String, Object> item : Iterators.asIterable(result)) {
+            movieTitles.add((String) item.get("movie.title"));
+        }
+        return Response.ok().entity(objectMapper.writeValueAsString(movieTitles)).build();
+    }
+
+    @GET
     @Path("/friendsJava/{name}")
     public Response getFriendsJava(@PathParam("name") String name, @Context GraphDatabaseService db) throws IOException {
 
