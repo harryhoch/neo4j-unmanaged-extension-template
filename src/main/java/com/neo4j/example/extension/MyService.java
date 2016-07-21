@@ -1,6 +1,8 @@
 package com.neo4j.example.extension;
 
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonFactory;
 import org.neo4j.graphdb.*;
 import org.neo4j.helpers.collection.Iterators;
 
@@ -9,7 +11,10 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 @Path("/service")
@@ -51,8 +56,25 @@ public class MyService {
         List<String> movieTitles = new ArrayList<>();
         for (Map<String, Object> item : Iterators.asIterable(result)) {
             movieTitles.add((String) item.get("movie.title"));
+	    System.err.println(item.get("movie.title"));
         }
         return Response.ok().entity(objectMapper.writeValueAsString(movieTitles)).build();
+    }
+
+
+    @GET
+    @Path("/actedCypherJson/{name}")
+    public Response getMoviesCypherJson(@PathParam("name") String name, @Context GraphDatabaseService db) throws IOException {
+        Result result = db.execute("MATCH (p:Person)-[:ACTED_IN]-(movie) WHERE p.name = {n} RETURN movie.title",
+                Collections.<String, Object>singletonMap("n", name));
+        List<String> movieTitles = new ArrayList<>();
+        for (Map<String, Object> item : Iterators.asIterable(result)) {
+            movieTitles.add((String) item.get("movie.title"));
+        }
+	final ByteArrayOutputStream out = new ByteArrayOutputStream();
+	objectMapper.writeValue(out,movieTitles);
+	String res = new String(out.toByteArray());
+        return Response.ok().entity(res).build();
     }
 
     @GET
